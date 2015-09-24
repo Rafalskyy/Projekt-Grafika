@@ -96,6 +96,7 @@ Framework::Mesh *g_pCylinderMesh = NULL;
 Framework::Mesh *g_pCubeTintMesh = NULL;
 Framework::Mesh *g_pCubeColorMesh = NULL;
 Framework::Mesh *g_pPlaneMesh = NULL;
+Framework::Mesh *g_pSphereMesh = NULL;
 
 //Called after the window and OpenGL are initialized. Called exactly once, before the main loop.
 void init()
@@ -109,6 +110,7 @@ void init()
 		g_pCubeTintMesh = new Framework::Mesh("UnitCubeTint.xml");
 		g_pCubeColorMesh = new Framework::Mesh("UnitCubeColor.xml");
 		g_pPlaneMesh = new Framework::Mesh("UnitPlane.xml");
+		g_pSphereMesh= new Framework::Mesh("UnitSphere.xml");
 	}
 	catch(std::exception &except)
 	{
@@ -473,7 +475,7 @@ glm::vec3 ResolveCamPosition()
 	return (dirToCamera * g_sphereCamRelPos.z) + g_camTarget;
 }
 
-glm::vec3 obliczPierdoloneSterowanie()
+glm::vec3 obliczSterowanie()
 {
 	glutil::MatrixStack tempMat;
 
@@ -487,7 +489,7 @@ glm::vec3 obliczPierdoloneSterowanie()
 }
 
 bool granica(){
-	glm::vec3 vector = obliczPierdoloneSterowanie();
+	glm::vec3 vector = obliczSterowanie();
 	if (g_camTarget.x > 48.0f && vector.x <= 0 || g_camTarget.x < -48.0f && vector.x >= 0 || g_camTarget.z > 48.0f && vector.z <= 0 || g_camTarget.z < -48.0f && vector.z >= 0) { return true; }
 	if (g_camTarget.x > 48.0f || g_camTarget.x < -48.0f || g_camTarget.z > 48.0f || g_camTarget.z < -48.0f) { return false; }
 };
@@ -538,21 +540,92 @@ void display()
 			DrawParthenon(modelMatrix);
 		}
 
-		if(g_bDrawLookatPoint)
 		{
-			glDisable(GL_DEPTH_TEST);
+			
 
 			glutil::PushStack push(modelMatrix);
 
-			modelMatrix.Translate(g_camTarget);
-			modelMatrix.Scale(1.0f, 1.0f, 1.0f);
+			modelMatrix.Translate(glm::vec3((g_camTarget.x - 0.5f), g_camTarget.y, g_camTarget.z));
+			modelMatrix.Scale(1.0f, 2.0f, 1.0f);
 
 			glUseProgram(UniformColorTint.theProgram);
 			glUniformMatrix4fv(UniformColorTint.modelToWorldMatrixUnif, 1, GL_FALSE, glm::value_ptr(modelMatrix.Top()));
 			glUniform4f(UniformColorTint.baseColorUnif, 0.694f, 0.4f, 0.106f, 1.0f);
 			g_pCylinderMesh->Render();
 			glUseProgram(0);
-			glEnable(GL_DEPTH_TEST);
+
+		}
+
+		{
+
+
+			glutil::PushStack push(modelMatrix);
+
+			modelMatrix.Translate(glm::vec3((g_camTarget.x - 1.0f), (g_camTarget.y + 2.0f), g_camTarget.z));
+			modelMatrix.Scale(1.0f, 1.5f, 1.0f);
+
+			glUseProgram(UniformColorTint.theProgram);
+			glUniformMatrix4fv(UniformColorTint.modelToWorldMatrixUnif, 1, GL_FALSE, glm::value_ptr(modelMatrix.Top()));
+			glUniform4f(UniformColorTint.baseColorUnif, 0.694f, 0.4f, 0.106f, 1.0f);
+			g_pCylinderMesh->Render();
+			glUseProgram(0);
+
+		}
+
+		{
+
+
+			glutil::PushStack push(modelMatrix);
+
+			modelMatrix.Translate(glm::vec3((g_camTarget.x + 1.0f), (g_camTarget.y + 2.0f), g_camTarget.z));
+			modelMatrix.Scale(1.0f, 1.5f, 1.0f);
+
+			glUseProgram(UniformColorTint.theProgram);
+			glUniformMatrix4fv(UniformColorTint.modelToWorldMatrixUnif, 1, GL_FALSE, glm::value_ptr(modelMatrix.Top()));
+			glUniform4f(UniformColorTint.baseColorUnif, 0.694f, 0.4f, 0.106f, 1.0f);
+			g_pCylinderMesh->Render();
+			glUseProgram(0);
+
+		}
+
+
+		{
+			glutil::PushStack push(modelMatrix);
+
+			modelMatrix.Translate(glm::vec3((g_camTarget.x + 0.5f), g_camTarget.y, g_camTarget.z));
+			modelMatrix.Scale(1.0f, 2.0f, 1.0f);
+
+			glUseProgram(UniformColorTint.theProgram);
+			glUniformMatrix4fv(UniformColorTint.modelToWorldMatrixUnif, 1, GL_FALSE, glm::value_ptr(modelMatrix.Top()));
+			glUniform4f(UniformColorTint.baseColorUnif, 0.694f, 0.4f, 0.106f, 1.0f);
+			g_pCylinderMesh->Render();
+			glUseProgram(0);
+		}
+
+		{
+			glutil::PushStack push(modelMatrix);
+
+			modelMatrix.Translate(glm::vec3(g_camTarget.x, g_camTarget.y + 2.0f, g_camTarget.z));
+			modelMatrix.Scale(2.0f, 2.0f, 2.0f);
+
+			glUseProgram(UniformColorTint.theProgram);
+			glUniformMatrix4fv(UniformColorTint.modelToWorldMatrixUnif, 1, GL_FALSE, glm::value_ptr(modelMatrix.Top()));
+			glUniform4f(UniformColorTint.baseColorUnif, 0.694f, 0.4f, 0.106f, 1.0f);
+			g_pCylinderMesh->Render();
+			glUseProgram(0);
+		}
+
+		{
+			glutil::PushStack push(modelMatrix);
+
+			modelMatrix.Translate(glm::vec3(g_camTarget.x, g_camTarget.y + 4.0f, g_camTarget.z));
+			modelMatrix.Scale(2.0f, 2.0f, 2.0f);
+
+			glUseProgram(UniformColorTint.theProgram);
+			glUniformMatrix4fv(UniformColorTint.modelToWorldMatrixUnif, 1, GL_FALSE, glm::value_ptr(modelMatrix.Top()));
+			glUniform4f(UniformColorTint.baseColorUnif, 0.694f, 0.4f, 0.106f, 1.0f);
+			g_pSphereMesh->Render();
+			glUseProgram(0);
 		}
 	}
 
@@ -597,14 +670,14 @@ void keyboard(unsigned char key, int x, int y)
 		g_pPlaneMesh = NULL;
 		glutLeaveMainLoop();
 		return;
-	case 'w': if (granica())g_camTarget = obliczPierdoloneSterowanie() + g_camTarget; break;
-	case 's': if (granica())g_camTarget = -obliczPierdoloneSterowanie() + g_camTarget; break;
+	case 'w': if (granica())g_camTarget = obliczSterowanie() + g_camTarget; break;
+	case 's': if (granica())g_camTarget = -obliczSterowanie() + g_camTarget; break;
 	case 'd': g_sphereCamRelPos.x += 11.25f; break;
 	case 'a': g_sphereCamRelPos.x -= 11.25f; break;
 	case 'e': g_sphereCamRelPos.y -= 11.25f; break;
 	case 'q': g_sphereCamRelPos.y += 11.25f; break;
-	case 'W': if (granica())g_camTarget = obliczPierdoloneSterowanie() / 4.0f + g_camTarget; break;
-	case 'S': if (granica())g_camTarget = -obliczPierdoloneSterowanie() / 4.0f + g_camTarget; break;
+	case 'W': if (granica())g_camTarget = obliczSterowanie() / 4.0f + g_camTarget; break;
+	case 'S': if (granica())g_camTarget = -obliczSterowanie() / 4.0f + g_camTarget; break;
 	case 'D': g_sphereCamRelPos.x += 1.125f; break;
 	case 'A': g_sphereCamRelPos.x -= 1.125f; break;
 	case 'E': g_sphereCamRelPos.y -= 1.125f; break;
