@@ -459,6 +459,18 @@ static glm::vec3 g_camTarget(20.0f, 0.4f, 35.0f);
 //In spherical coordinates.
 static glm::vec3 g_sphereCamRelPos(90.0f, -12.0f, 35.0f);
 
+glm::vec3 ResolvePosition(){
+	glutil::MatrixStack tempMat;
+
+	float alpha = Framework::DegToRad(g_sphereCamRelPos.x);
+
+	float fSinAlpha = sinf(alpha);
+	float fCosAlpha = cosf(alpha);
+
+	glm::vec3 dirToControl(1.0f, 0.0f, -1.0f);
+	return dirToControl;
+}
+
 glm::vec3 ResolveCamPosition()
 {
 	glutil::MatrixStack tempMat;
@@ -541,11 +553,17 @@ void display()
 		}
 
 		{
-			
+
+			glutil::MatrixStack tempMat;
+
+			float alpha = Framework::DegToRad(g_sphereCamRelPos.x + 90.0f);
+
+			float fSinAlpha = sinf(alpha);
+			float fCosAlpha = cosf(alpha);
 
 			glutil::PushStack push(modelMatrix);
 
-			modelMatrix.Translate(glm::vec3((g_camTarget.x - 0.5f), g_camTarget.y, g_camTarget.z));
+			modelMatrix.Translate(glm::vec3((g_camTarget.x + (fCosAlpha/2)), g_camTarget.y , (g_camTarget.z + (fSinAlpha/2))));
 			modelMatrix.Scale(1.0f, 2.0f, 1.0f);
 
 			glUseProgram(UniformColorTint.theProgram);
@@ -561,7 +579,16 @@ void display()
 
 			glutil::PushStack push(modelMatrix);
 
-			modelMatrix.Translate(glm::vec3((g_camTarget.x - 1.0f), (g_camTarget.y + 2.0f), g_camTarget.z));
+			glutil::MatrixStack tempMat;
+
+			float alpha = Framework::DegToRad(g_sphereCamRelPos.x + 90.0f);
+
+			float fSinAlpha =  sinf(alpha);
+			float fCosAlpha =  cosf(alpha);
+
+			glm::vec3 vector (((g_camTarget.x + fCosAlpha)), (g_camTarget.y + 2.0f), (g_camTarget.z + fSinAlpha));
+
+			modelMatrix.Translate(vector);
 			modelMatrix.Scale(1.0f, 1.5f, 1.0f);
 
 			glUseProgram(UniformColorTint.theProgram);
@@ -577,7 +604,14 @@ void display()
 
 			glutil::PushStack push(modelMatrix);
 
-			modelMatrix.Translate(glm::vec3((g_camTarget.x + 1.0f), (g_camTarget.y + 2.0f), g_camTarget.z));
+			glutil::MatrixStack tempMat;
+
+			float alpha = Framework::DegToRad(g_sphereCamRelPos.x + 90.0f);
+
+			float fSinAlpha =   sinf(alpha);
+			float fCosAlpha =   cosf(alpha);
+
+			modelMatrix.Translate(glm::vec3((g_camTarget.x - fCosAlpha), (g_camTarget.y + 2.0f), (g_camTarget.z - fSinAlpha)));
 			modelMatrix.Scale(1.0f, 1.5f, 1.0f);
 
 			glUseProgram(UniformColorTint.theProgram);
@@ -592,7 +626,14 @@ void display()
 		{
 			glutil::PushStack push(modelMatrix);
 
-			modelMatrix.Translate(glm::vec3((g_camTarget.x + 0.5f), g_camTarget.y, g_camTarget.z));
+			glutil::MatrixStack tempMat;
+
+			float alpha = Framework::DegToRad(g_sphereCamRelPos.x + 90.0f);
+
+			float fSinAlpha = sinf(alpha);
+			float fCosAlpha = cosf(alpha);
+
+			modelMatrix.Translate(glm::vec3((g_camTarget.x - (fCosAlpha/2)), g_camTarget.y, g_camTarget.z - (fSinAlpha/2)));
 			modelMatrix.Scale(1.0f, 2.0f, 1.0f);
 
 			glUseProgram(UniformColorTint.theProgram);
