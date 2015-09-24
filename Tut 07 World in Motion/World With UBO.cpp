@@ -486,6 +486,12 @@ glm::vec3 obliczPierdoloneSterowanie()
 	return dirToControl;
 }
 
+bool granica(){
+	glm::vec3 vector = obliczPierdoloneSterowanie();
+	if (g_camTarget.x > 48.0f && vector.x <= 0 || g_camTarget.x < -48.0f && vector.x >= 0 || g_camTarget.z > 48.0f && vector.z <= 0 || g_camTarget.z < -48.0f && vector.z >= 0) { return true; }
+	if (g_camTarget.x > 48.0f || g_camTarget.x < -48.0f || g_camTarget.z > 48.0f || g_camTarget.z < -48.0f) { return false; }
+};
+
 //Called to update the display.
 //You should call glutSwapBuffers after all of your rendering to display what you rendered.
 //If you need continuous updates of the screen, call glutPostRedisplay() at the end of the function.
@@ -575,6 +581,7 @@ void reshape (int w, int h)
 
 void keyboard(unsigned char key, int x, int y)
 {
+	glm::vec3 tempCamTarget;
 	switch (key)
 	{
 	case 27:
@@ -590,15 +597,15 @@ void keyboard(unsigned char key, int x, int y)
 		g_pPlaneMesh = NULL;
 		glutLeaveMainLoop();
 		return;
-	case 'w': g_camTarget = obliczPierdoloneSterowanie() + g_camTarget; break;
-	case 's': g_camTarget =-obliczPierdoloneSterowanie() + g_camTarget; break;
-	case 'd': g_sphereCamRelPos.y += 11.25f; break;
+	case 'w': if (granica())g_camTarget = obliczPierdoloneSterowanie() + g_camTarget; break;
+	case 's': if (granica())g_camTarget = -obliczPierdoloneSterowanie() + g_camTarget; break;
+	case 'd': g_sphereCamRelPos.x += 11.25f; break;
 	case 'a': g_sphereCamRelPos.x -= 11.25f; break;
 	case 'e': g_sphereCamRelPos.y -= 11.25f; break;
 	case 'q': g_sphereCamRelPos.y += 11.25f; break;
-	case 'W': g_camTarget = obliczPierdoloneSterowanie()/4.0f + g_camTarget; break;
-	case 'S': g_camTarget = obliczPierdoloneSterowanie()/4.0f + g_camTarget; break;
-	case 'D': g_sphereCamRelPos.y += 1.125f; break;
+	case 'W': if (granica())g_camTarget = obliczPierdoloneSterowanie() / 4.0f + g_camTarget; break;
+	case 'S': if (granica())g_camTarget = -obliczPierdoloneSterowanie() / 4.0f + g_camTarget; break;
+	case 'D': g_sphereCamRelPos.x += 1.125f; break;
 	case 'A': g_sphereCamRelPos.x -= 1.125f; break;
 	case 'E': g_sphereCamRelPos.y -= 1.125f; break;
 	case 'Q': g_sphereCamRelPos.y += 1.125f; break;
