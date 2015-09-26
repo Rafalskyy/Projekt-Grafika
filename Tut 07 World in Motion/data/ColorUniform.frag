@@ -1,10 +1,12 @@
 #version 330
 
-uniform vec4 baseColor;
+in vec2 colorCoord;
+
+uniform sampler2D colorTexture;
 
 out vec4 outputColor;
 
 void main()
 {
-	outputColor = baseColor;
+	outputColor = texture(colorTexture, colorCoord);
 }

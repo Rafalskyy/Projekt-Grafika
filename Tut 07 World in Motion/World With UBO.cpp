@@ -12,6 +12,8 @@
 #include <GL/freeglut.h>
 #include "../framework/framework.h"
 #include "../framework/Mesh.h"
+#include "../framework/directories.h"
+#include <glimg/glimg.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -23,13 +25,12 @@ struct ProgramData
 	GLuint globalUniformBlockIndex;
 	GLuint modelToWorldMatrixUnif;
 	GLuint baseColorUnif;
-	GLuint thing;
 };
 
 float g_fzNear = 1.0f;
 float g_fzFar = 1000.0f;
 
-ProgramData UniformColor;
+ProgramData Texture;
 ProgramData ObjectColor;
 ProgramData UniformColorTint;
 
@@ -57,7 +58,7 @@ ProgramData LoadProgram(const std::string &strVertexShader, const std::string &s
 
 void InitializeProgram()
 {
-	UniformColor = LoadProgram("PosOnlyWorldTransformUBO.vert", "ColorUniform.frag");
+	Texture = LoadProgram("PosOnlyWorldTransformUBO.vert", "ColorUniform.frag");
 	ObjectColor = LoadProgram("PosColorWorldTransformUBO.vert", "ColorPassthrough.frag");
 	UniformColorTint = LoadProgram("PosColorWorldTransformUBO.vert", "ColorMultUniform.frag");
 
@@ -66,9 +67,44 @@ void InitializeProgram()
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * 2, NULL, GL_STREAM_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-	glBindBufferRange(GL_UNIFORM_BUFFER, g_iGlobalMatricesBindingIndex, g_GlobalMatricesUBO,
-		0, sizeof(glm::mat4) * 2);
+	glBindBufferRange(GL_UNIFORM_BUFFER, g_iGlobalMatricesBindingIndex, g_GlobalMatricesUBO, 0, sizeof(glm::mat4) * 2);
 }
+
+GLuint g_checkerTexture = 0;
+
+void LoadCheckerTexture()
+{
+	try
+	{
+		std::string filename(LOCAL_FILE_DIR);
+		filename += "checker.dds";
+
+		std::auto_ptr<glimg::ImageSet> pImageSet(glimg::loaders::dds::LoadFromFile(filename.c_str()));
+
+		glGenTextures(1, &g_checkerTexture);
+		glBindTexture(GL_TEXTURE_2D, g_checkerTexture);
+
+		for(int mipmapLevel = 0; mipmapLevel < pImageSet->GetMipmapCount(); mipmapLevel++)
+		{
+			glimg::SingleImage image = pImageSet->GetImage(mipmapLevel, 0, 0);
+			glimg::Dimensions dims = image.GetDimensions();
+
+			glTexImage2D(GL_TEXTURE_2D, mipmapLevel, GL_RGB8, dims.width, dims.height, 0,
+				GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, image.GetImageData());
+		}
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, pImageSet->GetMipmapCount() - 1);
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+	catch(std::exception &e)
+	{
+		printf("%s\n", e.what());
+		throw;
+	}
+}
+
+
 
 glm::mat4 CalcLookAtMatrix(const glm::vec3 &cameraPt, const glm::vec3 &lookPt, const glm::vec3 &upPt)
 {
@@ -127,6 +163,8 @@ void init()
 	glDepthFunc(GL_LEQUAL);
 	glDepthRange(0.0f, 1.0f);
 	glEnable(GL_DEPTH_CLAMP);
+
+	LoadCheckerTexture();
 }
 
 static float g_fYAngle = 0.0f;
@@ -210,117 +248,6 @@ void DrawColumn(glutil::MatrixStack &modelMatrix, float fHeight = 5.0f)
 		glUniformMatrix4fv(UniformColorTint.modelToWorldMatrixUnif, 1, GL_FALSE, glm::value_ptr(modelMatrix.Top()));
 		glUniform4f(UniformColorTint.baseColorUnif, 0.9f, 0.9f, 0.9f, 0.9f);
 		g_pCylinderMesh->Render();
-		glUseProgram(0);
-	}
-}
-
-const float g_fParthenonWidth = 14.0f;
-const float g_fParthenonLength = 20.0f;
-const float g_fParthenonColumnHeight = 5.0f;
-const float g_fParthenonBaseHeight = 1.0f;
-const float g_fParthenonTopHeight = 2.0f;
-
-void DrawParthenon(glutil::MatrixStack &modelMatrix)
-{
-	//Draw base.
-	{
-		glutil::PushStack push(modelMatrix);
-
-		modelMatrix.Scale(glm::vec3(g_fParthenonWidth, g_fParthenonBaseHeight, g_fParthenonLength));
-		modelMatrix.Translate(glm::vec3(0.0f, 0.5f, 0.0f));
-
-		glUseProgram(UniformColorTint.theProgram);
-		glUniformMatrix4fv(UniformColorTint.modelToWorldMatrixUnif, 1, GL_FALSE, glm::value_ptr(modelMatrix.Top()));
-		glUniform4f(UniformColorTint.baseColorUnif, 0.9f, 0.9f, 0.9f, 0.9f);
-		g_pCubeTintMesh->Render();
-		glUseProgram(0);
-	}
-
-	//Draw top.
-	{
-		glutil::PushStack push(modelMatrix);
-
-		modelMatrix.Translate(glm::vec3(0.0f, g_fParthenonColumnHeight + g_fParthenonBaseHeight, 0.0f));
-		modelMatrix.Scale(glm::vec3(g_fParthenonWidth, g_fParthenonTopHeight, g_fParthenonLength));
-		modelMatrix.Translate(glm::vec3(0.0f, 0.5f, 0.0f));
-
-		glUseProgram(UniformColorTint.theProgram);
-		glUniformMatrix4fv(UniformColorTint.modelToWorldMatrixUnif, 1, GL_FALSE, glm::value_ptr(modelMatrix.Top()));
-		glUniform4f(UniformColorTint.baseColorUnif, 0.9f, 0.9f, 0.9f, 0.9f);
-		g_pCubeTintMesh->Render();
-		glUseProgram(0);
-	}
-
-	//Draw columns.
-	const float fFrontZVal = (g_fParthenonLength / 2.0f) - 1.0f;
-	const float fRightXVal = (g_fParthenonWidth / 2.0f) - 1.0f;
-
-	for(int iColumnNum = 0; iColumnNum < int(g_fParthenonWidth / 2.0f); iColumnNum++)
-	{
-		{
-			glutil::PushStack push(modelMatrix);
-			modelMatrix.Translate(glm::vec3((2.0f * iColumnNum) - (g_fParthenonWidth / 2.0f) + 1.0f,
-				g_fParthenonBaseHeight, fFrontZVal));
-
-			DrawColumn(modelMatrix, g_fParthenonColumnHeight);
-		}
-		{
-			glutil::PushStack push(modelMatrix);
-			modelMatrix.Translate(glm::vec3((2.0f * iColumnNum) - (g_fParthenonWidth / 2.0f) + 1.0f,
-				g_fParthenonBaseHeight, -fFrontZVal));
-
-			DrawColumn(modelMatrix, g_fParthenonColumnHeight);
-		}
-	}
-
-	//Don't draw the first or last columns, since they've been drawn already.
-	for(int iColumnNum = 1; iColumnNum < int((g_fParthenonLength - 2.0f) / 2.0f); iColumnNum++)
-	{
-		{
-			glutil::PushStack push(modelMatrix);
-			modelMatrix.Translate(glm::vec3(fRightXVal,
-				g_fParthenonBaseHeight, (2.0f * iColumnNum) - (g_fParthenonLength / 2.0f) + 1.0f));
-
-			DrawColumn(modelMatrix, g_fParthenonColumnHeight);
-		}
-		{
-			glutil::PushStack push(modelMatrix);
-			modelMatrix.Translate(glm::vec3(-fRightXVal,
-				g_fParthenonBaseHeight, (2.0f * iColumnNum) - (g_fParthenonLength / 2.0f) + 1.0f));
-
-			DrawColumn(modelMatrix, g_fParthenonColumnHeight);
-		}
-	}
-
-	//Draw interior.
-	{
-		glutil::PushStack push(modelMatrix);
-
-		modelMatrix.Translate(glm::vec3(0.0f, 1.0f, 0.0f));
-		modelMatrix.Scale(glm::vec3(g_fParthenonWidth - 6.0f, g_fParthenonColumnHeight,
-			g_fParthenonLength - 6.0f));
-		modelMatrix.Translate(glm::vec3(0.0f, 0.5f, 0.0f));
-
-		glUseProgram(ObjectColor.theProgram);
-		glUniformMatrix4fv(ObjectColor.modelToWorldMatrixUnif, 1, GL_FALSE, glm::value_ptr(modelMatrix.Top()));
-		g_pCubeColorMesh->Render();
-		glUseProgram(0);
-	}
-
-	//Draw headpiece.
-	{
-		glutil::PushStack push(modelMatrix);
-
-		modelMatrix.Translate(glm::vec3(
-			0.0f,
-			g_fParthenonColumnHeight + g_fParthenonBaseHeight + (g_fParthenonTopHeight / 2.0f),
-			g_fParthenonLength / 2.0f));
-		modelMatrix.RotateX(-135.0f);
-		modelMatrix.RotateY(45.0f);
-
-		glUseProgram(ObjectColor.theProgram);
-		glUniformMatrix4fv(ObjectColor.modelToWorldMatrixUnif, 1, GL_FALSE, glm::value_ptr(modelMatrix.Top()));
-		g_pCubeColorMesh->Render();
 		glUseProgram(0);
 	}
 }
@@ -500,15 +427,26 @@ glm::vec3 obliczSterowanie()
 	return dirToControl;
 }
 
-bool granica(){
+const float stalaGranicy = 96.0f;
+
+bool granica() {
 	glm::vec3 vector = obliczSterowanie();
-	if (g_camTarget.x > 48.0f && vector.x <= 0 || g_camTarget.x < -48.0f && vector.x >= 0 || g_camTarget.z > 48.0f && vector.z <= 0 || g_camTarget.z < -48.0f && vector.z >= 0) { return true; }
-	if (g_camTarget.x > 48.0f || g_camTarget.x < -48.0f || g_camTarget.z > 48.0f || g_camTarget.z < -48.0f) { return false; }
+	if (g_camTarget.x > stalaGranicy && vector.x <= 0 ||
+		g_camTarget.x < -stalaGranicy && vector.x >= 0 ||
+		g_camTarget.z > stalaGranicy && vector.z <= 0 ||
+		g_camTarget.z < -stalaGranicy && vector.z >= 0)
+	{ 
+			return true;
+	}
+	if (g_camTarget.x > stalaGranicy ||
+		g_camTarget.x < -stalaGranicy ||
+		g_camTarget.z > stalaGranicy ||
+		g_camTarget.z < -stalaGranicy)
+	{
+			return false;
+	}
 };
 
-//Called to update the display.
-//You should call glutSwapBuffers after all of your rendering to display what you rendered.
-//If you need continuous updates of the screen, call glutPostRedisplay() at the end of the function.
 void display()
 {
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -532,13 +470,16 @@ void display()
 		{
 			glutil::PushStack push(modelMatrix);
 
-			modelMatrix.Scale(glm::vec3(100.0f, 1.0f, 100.0f));
+			modelMatrix.Scale(glm::vec3(200.0f, 1.0f, 200.0f));
 
-			glUseProgram(UniformColor.theProgram);
-			glUniformMatrix4fv(UniformColor.modelToWorldMatrixUnif, 1, GL_FALSE, glm::value_ptr(modelMatrix.Top()));
-			glUniform4f(UniformColor.baseColorUnif, 0.302f, 0.416f, 0.0589f, 1.0f);
-			g_pPlaneMesh->Render();
+			glUseProgram(Texture.theProgram);
+
+			glUniformMatrix4fv(Texture.modelToWorldMatrixUnif, 1, GL_FALSE, glm::value_ptr(modelMatrix.Top()));
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, g_checkerTexture);
+			g_pPlaneMesh->Render("tex");
 			glUseProgram(0);
+
 		}
 
 		//Draw the trees
@@ -549,7 +490,6 @@ void display()
 			glutil::PushStack push(modelMatrix);
 			modelMatrix.Translate(glm::vec3(20.0f, 0.0f, -10.0f));
 
-			DrawParthenon(modelMatrix);
 		}
 
 		{
